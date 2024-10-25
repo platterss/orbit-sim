@@ -4,7 +4,7 @@ import sys
 
 pygame.init()
 
-WIDTH, HEIGHT = 1200, 800
+WIDTH, HEIGHT = 1300, 900
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Orbit Simulator")
 
