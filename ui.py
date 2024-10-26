@@ -2,6 +2,7 @@ import pygame
 import math
 import sys
 import orbitSim
+import self
 
 m1 = 1.989e30  # Sun mass (kg)
 time_scale = 2000000  # Speed up time by this factor
@@ -27,6 +28,27 @@ def load_image(name, size):
     image = pygame.transform.scale(image, (int(size), int(size)))
     return image
 
+class Slider:
+    def __init__(self, pos:tuple, size,tuple, initial_val: float, min: int) -> None:
+        self.pos = pos
+        self.size = size
+
+        self.slider_left_pos = self.pos[0] - size[0]//2
+        self.slider_right_pos = self.pos[0] + size[0]//2
+        self.slider_top_pos = self.pos[1] - size[1]//2
+
+        self.min = min
+        self.max = max
+        self.initial_val = (self.slider_right_pos - self.slider_left_pos) * initial_val #percentage
+
+        self.container_rect = pygame.Rect(self.slider_left_pos, self.slider_top_pos, self.size[0], self.size[1])
+        self.button_rect = pygame.Rect(self.slider_left_pos + self.initial_val - 5, self.slider_top_pos, 10, self.size[1])
+    def draw(self, surface):
+        pygame.draw.rect(surface, (255, 255, 255), self.container_rect)
+        pygame.draw.rect(surface, (0, 0, 0), self.button_rect)
+
+    def move_slider(self, mouse_pos):
+        self.button_rect.centerx = mouse_pos[0]
 
 class Planet:
     def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size):
@@ -102,6 +124,7 @@ def create_planets():
 
     return planets
 
+self.sliders = [Slider((WIDTH // 2, HEIGHT - 50), (WIDTH // 4, 10), (0, 1), 0.5, 0)]
 
 def main():
     clock = pygame.time.Clock()
@@ -127,6 +150,11 @@ def main():
             else:
                 planet.x, planet.y = center_x, center_y
             planet.draw(SCREEN)
+
+        for slider in self.sliders:
+            if slider.container_rect.collidepoint(pygame.mouse.get_pos()):
+               slider.move_slider(pygame.mouse.get_pos())
+            slider.draw(SCREEN)
 
         text_objects("Orbit Simulator", 16)
         pygame.display.flip()
