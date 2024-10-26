@@ -2,6 +2,7 @@ import pygame
 import math
 import sys
 import orbitSim
+from orbitSim import grav_force
 
 pygame.init()
 
@@ -192,6 +193,12 @@ def update_mass_slider(selected_planet, slider, original_masses):
     slider.set_val(slider_value)
 
 
+# def update_velocity(selected_planet, sliders, original_masses):
+#     new_mass = update_selected_planet_mass(selected_planet, sliders[0], original_masses)
+#     v = orbitSim.orbVel(m1, new_mass, selected_planet.orbit_radius_m, selected_planet.orbitSim.ellipse(selected_planet.orbit_radius_m, Place radius 2))
+#     return v
+
+
 def update_selected_planet_mass(selected_planet, slider, original_masses):
     slider_value = slider.get_val()
     original_mass = original_masses[selected_planet.name]
@@ -360,9 +367,25 @@ def main():
             text_objects("Orbit Radius: " + "{:.2e}".format(selected_planet.orbit_radius_m) + " m", 24, 8, 3.7)
             orbital_speed_kms = selected_planet.orbital_velocity / 1000  # Convert m/s to km/s
             text_objects("Orbital Speed: " + "{:.2f}".format(orbital_speed_kms) + " km/s", 24, 8, 4.2)
+            force = orbitSim.grav_force(m1, selected_planet.mass, selected_planet.orbit_radius_m)
+            text_objects("Gravitational Force: " + "{:.2e}".format(force) + " N", 24, 8, 3.3)
+            acceleration = orbitSim.acceleration(m1, selected_planet.mass, selected_planet.orbit_radius_m) / 1000
+            text_objects("Acceleration: " + "{:.2f}".format(acceleration) + " km/s^2", 24, 8, 3)
+            total_energy = orbitSim.energy(m1, selected_planet.mass, selected_planet.orbit_radius_m)
+            text_objects("Total Energy: " + "{:.2e}".format(total_energy) + " J", 24, 8, 2.7)
+            kinetic_energy = orbitSim.kinetic(m1, selected_planet.mass, selected_planet.orbit_radius_m)
+            text_objects("Kinetic Energy: " + "{:.2e}".format(kinetic_energy) + " J", 24, 8, 2.5)
+            potential_energy = orbitSim.potential(m1, selected_planet.mass, selected_planet.orbit_radius_m)
+            text_objects("Potential Energy: " + "{:.2e}".format(potential_energy) + " J", 24, 8, 2.3)
         else:
             text_objects("Orbit Radius: N/A", 24, 8, 3.7)
             text_objects("Orbital Speed: N/A", 24, 8, 4.2)
+            text_objects("Gravitational Force: N/A", 24, 8, 3.3)
+            text_objects("Acceleration: N/A", 24, 8, 3)
+            text_objects("Total Energy: N/A", 24, 8, 2.7)
+            text_objects("Kinetic Energy: N/A", 24, 8, 2.5)
+            text_objects("Potential Energy: N/A", 24, 8, 2.3)
+
 
         text_objects("Adjust mass of selected planet", 24, 7.5, 1.1)
         text_objects("Click on a planet to select it", 18, 8, 2)
