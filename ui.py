@@ -199,7 +199,7 @@ def main():
         text_objects("Mass: " + str(planets[0].mass) + " kg", 24, 8, 5)
         text_objects("Radius: " + str(planets[0].orbit_radius_m) + "km", 24, 8, 4)
         text_objects("Adjust mass by dragging slider", 24, 8, 1.1)
-        text_objects("Click on a planet to hide/show it", 18, 8, 2)
+        text_objects("Click on a planet to hide it", 18, 8, 2)
 
         pygame.display.flip()
         print(slider.get_val())
