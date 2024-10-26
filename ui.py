@@ -262,6 +262,12 @@ def main():
     planets = create_planets()
     selected_planet = planets[0]
 
+    earth_planet = None
+    for planet in planets:
+        if planet.name == "Earth":
+            earth_planet = planet
+            break
+
     original_masses = {planet.name: planet.mass for planet in planets}
 
     update_mass_slider(selected_planet, sliders[0], original_masses)
@@ -349,8 +355,8 @@ def main():
                     pygame.draw.ellipse(SCREEN, (100, 100, 100), orbit_rect, 1)
             else:
                 planet.x, planet.y = center_x, center_y
-            planet.draw(SCREEN)
 
+            planet.draw(SCREEN)
 
         for rb in radio_buttons:
             rb.draw(SCREEN)
@@ -371,6 +377,7 @@ def main():
 
         text_objects("Planet: " + selected_planet.name, 24, 8, 7)
         text_objects("Mass: " + "{:.2e}".format(selected_planet.mass) + " kg", 24, 8, 5)
+        text_objects("Earth Years Elapsed: {:.2f}".format(earth_planet.angle / (2 * math.pi)), 24, 8, 12)
 
         if selected_planet.name != "Sun":
             text_objects("Orbit Radius: " + "{:.2e}".format(selected_planet.orbit_radius_m) + " m", 24, 8, 3.7)
