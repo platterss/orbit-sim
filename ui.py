@@ -101,12 +101,19 @@ class RadioButton:
 
 
 class Planet:
-    def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size, time_scale):
+    def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size, time_scale, eccentricity=0):
         self.name = name
         self.image = load_image(image, size)
         self.mass = mass  # kg
         self.orbit_radius_m = orbit_radius_m
-        self.orbit_radius = orbit_radius_pixels
+        self.eccentricity = eccentricity
+
+        # Orbital parameters
+        self.a = orbit_radius_pixels  # Semi-major axis in pixels
+        self.e = eccentricity  # Eccentricity
+        self.b = self.a * math.sqrt(1 - self.e ** 2)  # Semi-minor axis in pixels
+        self.c = self.a * self.e  # Distance from center to focus in pixels
+
         self.size = size
         self.angle = 0
         self.x = 0
@@ -114,19 +121,20 @@ class Planet:
         self.visible = True
 
         if self.name != "Sun":
-            axis = self.orbit_radius_m
-            v = orbitSim.orbVel(m1, self.mass, self.orbit_radius_m, axis)
-            omega = v / self.orbit_radius_m
-            self.orbital_velocity = v
-            self.orbit_speed = omega * (1 / 60.0) * time_scale
+            G = 6.67430e-11  # Gravitational constant
+            self.mean_motion = math.sqrt(G * m1 / (self.orbit_radius_m ** 3))
+            self.orbit_speed = self.mean_motion * time_scale / 60.0
+            self.orbital_velocity = math.sqrt(G * m1 * (2 / self.orbit_radius_m - 1 / self.orbit_radius_m))
         else:
             self.orbital_velocity = 0
             self.orbit_speed = 0
 
     def update_position(self, center_x, center_y):
         self.angle += self.orbit_speed
-        self.x = center_x + self.orbit_radius * math.cos(self.angle)
-        self.y = center_y + self.orbit_radius * math.sin(self.angle)
+        self.x = center_x + self.a * math.cos(self.angle) - self.c
+        self.y = center_y + self.b * math.sin(self.angle)
+
+
 
     def draw(self, surface):
         if self.visible:
@@ -165,21 +173,21 @@ def create_planets():
 
     # Parameters: name, image file, mass (kg), orbit radius (m), orbit radius (pixels)
     planet_data = [
-        ("Mercury", "mercury.jpg", 3.285e23, 5.791e10, 60),
-        ("Venus", "venus.jpg", 4.867e24, 1.082e11, 100),
-        ("Earth", "earth.jpg", 5.972e24, 1.496e11, 140),
-        ("Mars", "mars.jpg", 6.39e23, 2.279e11, 180),
-        ("Jupiter", "jupiter.jpg", 1.898e27, 7.785e11, 240),
-        ("Saturn", "saturn.jpg", 5.683e26, 1.433e12, 300),
-        ("Uranus", "uranus.jpg", 8.681e25, 2.872e12, 360),
-        ("Neptune", "neptune.jpg", 1.024e26, 4.495e12, 420)
+        ("Mercury", "mercury.jpg", 3.285e23, 5.791e10, 60, 0.2056),
+        ("Venus", "venus.jpg", 4.867e24, 1.082e11, 100, 0.0068),
+        ("Earth", "earth.jpg", 5.972e24, 1.496e11, 140, 0.0167),
+        ("Mars", "mars.jpg", 6.39e23, 2.279e11, 180, 0.0934),
+        ("Jupiter", "jupiter.jpg", 1.898e27, 7.785e11, 240, 0.0484),
+        ("Saturn", "saturn.jpg", 5.683e26, 1.433e12, 300, 0.0542),
+        ("Uranus", "uranus.jpg", 8.681e25, 2.872e12, 360, 0.0472),
+        ("Neptune", "neptune.jpg", 1.024e26, 4.495e12, 420, 0.0086)
     ]
 
     for data in planet_data:
-        name, image_file, mass, orbit_radius_m, orbit_radius_pixels = data
+        name, image_file, mass, orbit_radius_m, orbit_radius_pixels, eccentricity = data
         planet_radius = planetary_radii[name]
         size = sun_size * ((planet_radius / sun_radius) ** (1 / 6))  # 6th root for visibility
-        planet = Planet(name, image_file, mass, orbit_radius_m, orbit_radius_pixels, size, time_scale)
+        planet = Planet(name, image_file, mass, orbit_radius_m, orbit_radius_pixels, size, time_scale, eccentricity)
         planets.append(planet)
 
     return planets
@@ -332,16 +340,17 @@ def main():
             if planet.name != "Sun":
                 planet.update_position(center_x, center_y)
                 if planet.visible:
-                    pygame.draw.circle(
-                        SCREEN,
-                        (100, 100, 100),
-                        (center_x, center_y),
-                        int(planet.orbit_radius),
-                        1
+                    orbit_rect = pygame.Rect(
+                        center_x - planet.a - planet.c,
+                        center_y - planet.b,
+                        2 * planet.a,
+                        2 * planet.b
                     )
+                    pygame.draw.ellipse(SCREEN, (100, 100, 100), orbit_rect, 1)
             else:
                 planet.x, planet.y = center_x, center_y
             planet.draw(SCREEN)
+
 
         for rb in radio_buttons:
             rb.draw(SCREEN)
