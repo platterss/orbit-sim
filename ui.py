@@ -51,9 +51,9 @@ class Slider:
         self.button_rect.centerx = mouse_pos[0]
 
     def get_val(self):
-        value_range = self.slider_right_pos - self.slider_left_pos
+        value_range = self.slider_right_pos - self.slider_left_pos - 1
         button_val = self.button_rect.centerx - self.slider_left_pos
-        return (button_val/value_range) * (self.max - self.min)+self.min
+        return round((button_val/value_range) * (self.max - self.min)+self.min, 2)
 
 class Planet:
     def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size):
@@ -129,7 +129,7 @@ def create_planets():
 
     return planets
 
-self.sliders = [Slider((WIDTH // 2, HEIGHT - 50), (WIDTH // 4, 10), (0, 1), 0.5, 0, 1)] #adjust last 2 vals for min and max
+self.sliders = [Slider((WIDTH // 2, HEIGHT - 30), (WIDTH // 4, 20), (0, 1), 0.5, 0, 1)] #adjust last 2 vals for min and max
 
 def main():
     clock = pygame.time.Clock()
