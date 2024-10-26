@@ -152,7 +152,7 @@ def main():
             planet.draw(SCREEN)
 
         for slider in self.sliders:
-            if slider.container_rect.collidepoint(pygame.mouse.get_pos()):
+            if slider.container_rect.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
                slider.move_slider(pygame.mouse.get_pos())
             slider.draw(SCREEN)
 
