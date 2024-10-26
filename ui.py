@@ -221,8 +221,9 @@ def main():
     global m1
     clock = pygame.time.Clock()
     running = True
+    paused = False
 
-    BLACK = (0, 0, 0)
+    G = 6.67430e-11  # Gravitational constant
 
     center_x, center_y = WIDTH // 2, HEIGHT // 2
 
@@ -231,6 +232,9 @@ def main():
 
     hide_button_rect = pygame.Rect(WIDTH - 150, 80, 130, 40)
     hide_button_color = (100, 100, 100)
+
+    pause_button_rect = pygame.Rect(WIDTH - 150, 140, 130, 40)
+    pause_button_color = (100, 100, 100)
 
     sliders = [Slider((WIDTH // 2, HEIGHT - 30), (WIDTH // 4, 20), 0.5, 0, 1)]
 
@@ -268,13 +272,17 @@ def main():
             earth_planet = planet
             break
 
+    if earth_planet is None:
+        print("Error: Earth planet not found!")
+        sys.exit()
+
     original_masses = {planet.name: planet.mass for planet in planets}
 
     update_mass_slider(selected_planet, sliders[0], original_masses)
 
     while running:
         clock.tick(60)  # 60 FPS
-        SCREEN.fill(BLACK)
+        SCREEN.fill((0, 0, 0))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -285,20 +293,23 @@ def main():
                     for planet in planets:
                         planet.visible = True
                         planet.mass = original_masses[planet.name]
+                        planet.angle = 0
+                    paused = False
                     m1 = original_masses["Sun"]
                     for planet in planets:
                         if planet.name != "Sun":
-                            axis = planet.orbit_radius_m
-                            v = orbitSim.orbVel(m1, planet.mass, planet.orbit_radius_m, axis)
-                            omega = v / planet.orbit_radius_m
-                            planet.orbital_velocity = v
-                            planet.orbit_speed = omega * (1 / 60.0) * time_scale
+                            G = 6.67430e-11  # Gravitational constant
+                            planet.mean_motion = math.sqrt(G * m1 / (planet.orbit_radius_m ** 3))
+                            planet.orbital_velocity = math.sqrt(G * m1 / planet.orbit_radius_m)
+                            planet.orbit_speed = planet.mean_motion * time_scale / 60.0
                         else:
                             planet.orbital_velocity = 0
                             planet.orbit_speed = 0
                     update_mass_slider(selected_planet, sliders[0], original_masses)
                 elif hide_button_rect.collidepoint(mouse_pos):
                     selected_planet.visible = not selected_planet.visible
+                elif pause_button_rect.collidepoint(mouse_pos):
+                    paused = not paused
                 else:
                     for planet in planets:
                         if planet.is_clicked(mouse_pos):
@@ -311,11 +322,9 @@ def main():
                         time_scale = selected_value * 2000000
                         for planet in planets:
                             if planet.name != "Sun":
-                                axis = planet.orbit_radius_m
-                                v = orbitSim.orbVel(m1, planet.mass, planet.orbit_radius_m, axis)
-                                omega = v / planet.orbit_radius_m
-                                planet.orbital_velocity = v
-                                planet.orbit_speed = omega * (1 / 60.0) * time_scale
+                                G = 6.67430e-11  # Gravitational constant
+                                planet.mean_motion = math.sqrt(G * m1 / (planet.orbit_radius_m ** 3))
+                                planet.orbit_speed = planet.mean_motion * time_scale / 60.0
 
         for slider in sliders:
             if slider.container_rect.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
@@ -328,24 +337,23 @@ def main():
             m1 = new_mass
             for planet in planets:
                 if planet.name != "Sun":
-                    axis = planet.orbit_radius_m
-                    v = orbitSim.orbVel(m1, planet.mass, planet.orbit_radius_m, axis)
-                    omega = v / planet.orbit_radius_m
-                    planet.orbital_velocity = v
-                    planet.orbit_speed = omega * (1 / 60.0) * time_scale
+                    G = 6.67430e-11  # Gravitational constant
+                    planet.mean_motion = math.sqrt(G * m1 / (planet.orbit_radius_m ** 3))
+                    planet.orbital_velocity = math.sqrt(G * m1 / planet.orbit_radius_m)
+                    planet.orbit_speed = planet.mean_motion * time_scale / 60.0
                 else:
                     planet.orbital_velocity = 0
-        else:
-            axis = selected_planet.orbit_radius_m
-            v = orbitSim.orbVel(m1, selected_planet.mass, selected_planet.orbit_radius_m, axis)
-            omega = v / selected_planet.orbit_radius_m
-            selected_planet.orbital_velocity = v
-            selected_planet.orbit_speed = omega * (1 / 60.0) * time_scale
+
+        if not paused:
+            for planet in planets:
+                if planet.name != "Sun":
+                    planet.update_position(center_x, center_y)
+                else:
+                    planet.x, planet.y = center_x, center_y
 
         for planet in planets:
-            if planet.name != "Sun":
-                planet.update_position(center_x, center_y)
-                if planet.visible:
+            if planet.visible:
+                if planet.name != "Sun":
                     orbit_rect = pygame.Rect(
                         center_x - planet.a - planet.c,
                         center_y - planet.b,
@@ -353,10 +361,7 @@ def main():
                         2 * planet.b
                     )
                     pygame.draw.ellipse(SCREEN, (100, 100, 100), orbit_rect, 1)
-            else:
-                planet.x, planet.y = center_x, center_y
-
-            planet.draw(SCREEN)
+                planet.draw(SCREEN)
 
         for rb in radio_buttons:
             rb.draw(SCREEN)
@@ -375,9 +380,22 @@ def main():
         hide_text_rect = hide_text.get_rect(center=hide_button_rect.center)
         SCREEN.blit(hide_text, hide_text_rect)
 
+        pygame.draw.rect(SCREEN, pause_button_color, pause_button_rect)
+        pause_text = pygame.font.Font('freesansbold.ttf', 20).render(
+            "Resume" if paused else "Pause", True, (255, 255, 255)
+        )
+        pause_text_rect = pause_text.get_rect(center=pause_button_rect.center)
+        SCREEN.blit(pause_text, pause_text_rect)
+
+        text_objects(
+            "Earth Years Elapsed: {:.2f}".format(earth_planet.angle / (2 * math.pi)),
+            24,
+            8,
+            12
+        )
+
         text_objects("Planet: " + selected_planet.name, 24, 8, 7)
         text_objects("Mass: " + "{:.2e}".format(selected_planet.mass) + " kg", 24, 8, 5)
-        text_objects("Earth Years Elapsed: {:.2f}".format(earth_planet.angle / (2 * math.pi)), 24, 8, 12)
 
         if selected_planet.name != "Sun":
             text_objects("Orbit Radius: " + "{:.2e}".format(selected_planet.orbit_radius_m) + " m", 24, 8, 3.7)
@@ -389,14 +407,12 @@ def main():
             text_objects("Acceleration: " + "{:.2f}".format(acceleration) + " km/s^2", 24, 8, 3)
             total_energy = orbitSim.energy(m1, selected_planet.mass, selected_planet.orbit_radius_m)
             text_objects("Total Energy: " + "{:.2e}".format(total_energy) + " J", 24, 8, 2.7)
-
         else:
             text_objects("Orbit Radius: N/A", 24, 8, 3.7)
             text_objects("Orbital Speed: N/A", 24, 8, 4.2)
             text_objects("Gravitational Force: N/A", 24, 8, 3.3)
             text_objects("Acceleration: N/A", 24, 8, 3)
             text_objects("Total Energy: N/A", 24, 8, 2.7)
-
 
         text_objects("Adjust mass of selected planet", 24, 7.5, 1.1)
         text_objects("Click on a planet to select it", 18, 8, 2)
@@ -405,6 +421,7 @@ def main():
 
     pygame.quit()
     sys.exit()
+
 
 
 if __name__ == "__main__":
