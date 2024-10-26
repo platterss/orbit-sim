@@ -12,6 +12,15 @@ WIDTH, HEIGHT = 1300, 900
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Orbit Simulator")
 
+#Display text
+def text_objects(text, font):
+    white = (255, 255, 255)
+    font = pygame.font.Font('freesansbold.ttf', font)
+    text = font.render(text, True, white)
+    textRect = text.get_rect()
+    textRect.center = (WIDTH // 8, HEIGHT // 4)
+    SCREEN.blit(text, textRect)
+
 def load_image(name, scale):
     image = pygame.image.load(f'images/{name}').convert_alpha()
     w, h = image.get_size()
@@ -99,6 +108,7 @@ def main():
                 planet.x, planet.y = center_x, center_y
             planet.draw(SCREEN)
 
+        text_objects("Orbit Simulator", 16)
         pygame.display.flip()
 
     pygame.quit()
