@@ -3,9 +3,6 @@ import math
 import sys
 import orbitSim
 
-m1 = 1.989e30  # Sun mass (kg)
-time_scale = 2000000  # Speed up time by this factor
-
 pygame.init()
 
 WIDTH, HEIGHT = 1500, 900
@@ -13,13 +10,13 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Orbit Simulator")
 
 
-def text_objects(text, font, a, b):
+def text_objects(text, font_size, a, b):
     white = (255, 255, 255)
-    font = pygame.font.Font('freesansbold.ttf', font)
-    text = font.render(text, True, white)
-    textRect = text.get_rect()
-    textRect.center = (WIDTH // a, HEIGHT // b)
-    SCREEN.blit(text, textRect)
+    font = pygame.font.Font('freesansbold.ttf', int(font_size))
+    text_surface = font.render(text, True, white)
+    text_rect = text_surface.get_rect()
+    text_rect.center = (WIDTH // a, HEIGHT // b)
+    SCREEN.blit(text_surface, text_rect)
 
 
 def load_image(name, size):
@@ -29,8 +26,8 @@ def load_image(name, size):
 
 
 class Slider:
-    def __init__(self, pos: tuple, size, tuple, initial_val: float, min: int, max: int) -> None:
-        self.pos = (20, pos[1])  #pos
+    def __init__(self, pos: tuple, size: tuple, initial_val: float, min: int, max: int) -> None:
+        self.pos = (20, pos[1])  # pos
         self.size = size
 
         self.slider_left_pos = self.pos[0]
@@ -39,23 +36,34 @@ class Slider:
 
         self.min = min
         self.max = max
-        self.initial_val = (self.slider_right_pos - self.slider_left_pos) * initial_val  #percentage
+        self.initial_val = initial_val  # between min and max
 
         self.container_rect = pygame.Rect(self.slider_left_pos, self.slider_top_pos, self.size[0], self.size[1])
-        self.button_rect = pygame.Rect(self.slider_left_pos + self.initial_val - 5, self.slider_top_pos, 10,
-                                       self.size[1])
+
+        initial_fraction = (initial_val - self.min) / (self.max - self.min)
+        initial_button_x = self.slider_left_pos + initial_fraction * (self.slider_right_pos - self.slider_left_pos)
+        self.button_rect = pygame.Rect(initial_button_x - 5, self.slider_top_pos, 10, self.size[1])
 
     def draw(self, surface):
         pygame.draw.rect(surface, (255, 255, 255), self.container_rect)
-        pygame.draw.rect(surface, (0, 0, 0), self.button_rect)
+        pygame.draw.rect(surface, (128, 128, 128), self.button_rect)
 
     def move_slider(self, mouse_pos):
         self.button_rect.centerx = mouse_pos[0]
+        self.button_rect.centerx = max(self.slider_left_pos, min(self.button_rect.centerx, self.slider_right_pos))
 
     def get_val(self):
-        value_range = self.slider_right_pos - self.slider_left_pos - 1
+        value_range = self.slider_right_pos - self.slider_left_pos
         button_val = self.button_rect.centerx - self.slider_left_pos
-        return round((button_val / value_range) * (self.max - self.min) + self.min, 2)
+        return (button_val / value_range) * (self.max - self.min) + self.min
+
+    def set_val(self, value):
+        # Ensure value is within [self.min, self.max]
+        value = max(self.min, min(value, self.max))
+        fraction = (value - self.min) / (self.max - self.min)
+        self.button_rect.centerx = self.slider_left_pos + fraction * (self.slider_right_pos - self.slider_left_pos)
+
+
 
 
 class RadioButton:
@@ -74,25 +82,20 @@ class RadioButton:
         self.label_rect.centery = y
 
     def draw(self, surface):
-        # Draw circle for radio button
         pygame.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius, 2)
         if self.selected:
-            # Fill the circle if selected
             pygame.draw.circle(surface, (255, 255, 255), (self.x, self.y), self.radius - 4)
-        # Draw the label next to the radio button
         surface.blit(self.label, self.label_rect)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = event.pos
-            # Check if the mouse click is within the radio button
             distance = math.hypot(mouse_pos[0] - self.x, mouse_pos[1] - self.y)
             if distance <= self.radius:
-                # Deselect all other radio buttons in the group
                 for rb in self.group:
                     rb.selected = False
                 self.selected = True
-                return self.value  # Return the selected value
+                return self.value
         return None
 
 
@@ -113,8 +116,10 @@ class Planet:
             axis = self.orbit_radius_m
             v = orbitSim.orbVel(m1, self.mass, self.orbit_radius_m, axis)
             omega = v / self.orbit_radius_m
+            self.orbital_velocity = v
             self.orbit_speed = omega * (1 / 60.0) * time_scale
         else:
+            self.orbital_velocity = 0
             self.orbit_speed = 0
 
     def update_position(self, center_x, center_y):
@@ -179,9 +184,27 @@ def create_planets():
     return planets
 
 
+def update_mass_slider(selected_planet, slider, original_masses):
+    original_mass = original_masses[selected_planet.name]
+    min_mass = original_mass * 0.5
+    max_mass = original_mass * 1.5
+    slider_value = (selected_planet.mass - min_mass) / (max_mass - min_mass)
+    slider.set_val(slider_value)
+
+
+def update_selected_planet_mass(selected_planet, slider, original_masses):
+    slider_value = slider.get_val()
+    original_mass = original_masses[selected_planet.name]
+    min_mass = original_mass * 0.5
+    max_mass = original_mass * 1.5
+    new_mass = min_mass + (max_mass - min_mass) * slider_value
+    selected_planet.mass = new_mass
+    return new_mass
+
+
 def main():
+    global m1
     clock = pygame.time.Clock()
-    planets = create_planets()
     running = True
 
     BLACK = (0, 0, 0)
@@ -191,27 +214,42 @@ def main():
     reset_button_rect = pygame.Rect(WIDTH - 150, 20, 130, 40)
     reset_button_color = (100, 100, 100)
 
-    sliders = [Slider((WIDTH // 2, HEIGHT - 30), (WIDTH // 4, 20), (0, 1), 0.5, 0, 1)]  #adjust last 2 vals for min and max
+    hide_button_rect = pygame.Rect(WIDTH - 150, 80, 130, 40)
+    hide_button_color = (100, 100, 100)
+
+    sliders = [Slider((WIDTH // 2, HEIGHT - 30), (WIDTH // 4, 20), 0.5, 0, 1)]
 
     radio_buttons = []
-    radio_button_x = 170  # Starting x position of the first radio button
-    radio_button_y = HEIGHT - 250  # Starting y position
-    radio_button_radius = 10  # Radius of the radio button
-    radio_button_spacing = 30  # Vertical spacing between radio buttons
+    radio_button_x = 170
+    radio_button_y = HEIGHT - 250
+    radio_button_radius = 10
+    radio_button_spacing = 30
 
     time_scales = [(1, "1x"), (2, "2x"), (5, "5x")]
     radio_button_group = []
 
     for i, (value, label) in enumerate(time_scales):
-        rb = RadioButton(radio_button_x, radio_button_y + i * radio_button_spacing, radio_button_radius, label, value, radio_button_group)
+        rb = RadioButton(
+            radio_button_x,
+            radio_button_y + i * radio_button_spacing,
+            radio_button_radius,
+            label,
+            value,
+            radio_button_group
+        )
         radio_button_group.append(rb)
         radio_buttons.append(rb)
 
-    # Set the default selected radio button
     radio_buttons[0].selected = True
     global time_scale
-    time_scale = radio_buttons[0].value * 2000000  # Adjust the multiplier as needed
+    time_scale = radio_buttons[0].value * 2000000
 
+    planets = create_planets()
+    selected_planet = planets[0]
+
+    original_masses = {planet.name: planet.mass for planet in planets}
+
+    update_mass_slider(selected_planet, sliders[0], original_masses)
 
     while running:
         clock.tick(60)  # 60 FPS
@@ -225,10 +263,26 @@ def main():
                 if reset_button_rect.collidepoint(mouse_pos):
                     for planet in planets:
                         planet.visible = True
+                        planet.mass = original_masses[planet.name]
+                    m1 = original_masses["Sun"]
+                    for planet in planets:
+                        if planet.name != "Sun":
+                            axis = planet.orbit_radius_m
+                            v = orbitSim.orbVel(m1, planet.mass, planet.orbit_radius_m, axis)
+                            omega = v / planet.orbit_radius_m
+                            planet.orbital_velocity = v
+                            planet.orbit_speed = omega * (1 / 60.0) * time_scale
+                        else:
+                            planet.orbital_velocity = 0
+                            planet.orbit_speed = 0
+                    update_mass_slider(selected_planet, sliders[0], original_masses)
+                elif hide_button_rect.collidepoint(mouse_pos):
+                    selected_planet.visible = not selected_planet.visible
                 else:
                     for planet in planets:
                         if planet.is_clicked(mouse_pos):
-                            planet.visible = not planet.visible
+                            selected_planet = planet
+                            update_mass_slider(selected_planet, sliders[0], original_masses)
                             break
                 for btn in radio_buttons:
                     selected_value = btn.handle_event(event)
@@ -239,43 +293,87 @@ def main():
                                 axis = planet.orbit_radius_m
                                 v = orbitSim.orbVel(m1, planet.mass, planet.orbit_radius_m, axis)
                                 omega = v / planet.orbit_radius_m
+                                planet.orbital_velocity = v
                                 planet.orbit_speed = omega * (1 / 60.0) * time_scale
-
-        for planet in planets:
-            if planet.name != "Sun":
-                planet.update_position(center_x, center_y)
-                if planet.visible:
-                    pygame.draw.circle(SCREEN, (100, 100, 100), (center_x, center_y), int(planet.orbit_radius), 1)
-            else:
-                planet.x, planet.y = center_x, center_y
-            planet.draw(SCREEN)
 
         for slider in sliders:
             if slider.container_rect.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
                 slider.move_slider(pygame.mouse.get_pos())
             slider.draw(SCREEN)
 
+        new_mass = update_selected_planet_mass(selected_planet, sliders[0], original_masses)
+
+        if selected_planet.name == "Sun":
+            m1 = new_mass
+            for planet in planets:
+                if planet.name != "Sun":
+                    axis = planet.orbit_radius_m
+                    v = orbitSim.orbVel(m1, planet.mass, planet.orbit_radius_m, axis)
+                    omega = v / planet.orbit_radius_m
+                    planet.orbital_velocity = v
+                    planet.orbit_speed = omega * (1 / 60.0) * time_scale
+                else:
+                    planet.orbital_velocity = 0
+        else:
+            axis = selected_planet.orbit_radius_m
+            v = orbitSim.orbVel(m1, selected_planet.mass, selected_planet.orbit_radius_m, axis)
+            omega = v / selected_planet.orbit_radius_m
+            selected_planet.orbital_velocity = v
+            selected_planet.orbit_speed = omega * (1 / 60.0) * time_scale
+
+        for planet in planets:
+            if planet.name != "Sun":
+                planet.update_position(center_x, center_y)
+                if planet.visible:
+                    pygame.draw.circle(
+                        SCREEN,
+                        (100, 100, 100),
+                        (center_x, center_y),
+                        int(planet.orbit_radius),
+                        1
+                    )
+            else:
+                planet.x, planet.y = center_x, center_y
+            planet.draw(SCREEN)
+
         for rb in radio_buttons:
             rb.draw(SCREEN)
 
         pygame.draw.rect(SCREEN, reset_button_color, reset_button_rect)
-        reset_text = pygame.font.Font('freesansbold.ttf', 20).render("Reset Planets", True, (255, 255, 255))
+        reset_text = pygame.font.Font('freesansbold.ttf', 20).render(
+            "Reset Planets", True, (255, 255, 255)
+        )
         reset_text_rect = reset_text.get_rect(center=reset_button_rect.center)
         SCREEN.blit(reset_text, reset_text_rect)
 
-        text_objects("Planet: " + planets[0].name, 24, 8, 7)
-        text_objects("Mass: " + str(planets[0].mass) + " kg", 24, 8, 5)
-        text_objects("Radius: " + str(planets[0].orbit_radius_m) + "km", 24, 8, 4)
-        text_objects("Speed", 24, 8, 1.45)
-        text_objects("Adjust mass by dragging slider", 24, 8, 1.1)
-        text_objects("Click on a planet to hide it", 18, 8, 2)
+        pygame.draw.rect(SCREEN, hide_button_color, hide_button_rect)
+        hide_text = pygame.font.Font('freesansbold.ttf', 20).render(
+            "Hide Planet", True, (255, 255, 255)
+        )
+        hide_text_rect = hide_text.get_rect(center=hide_button_rect.center)
+        SCREEN.blit(hide_text, hide_text_rect)
+
+        text_objects("Planet: " + selected_planet.name, 24, 8, 7)
+        text_objects("Mass: " + "{:.2e}".format(selected_planet.mass) + " kg", 24, 8, 5)
+
+        if selected_planet.name != "Sun":
+            text_objects("Orbit Radius: " + "{:.2e}".format(selected_planet.orbit_radius_m) + " m", 24, 8, 3.7)
+            orbital_speed_kms = selected_planet.orbital_velocity / 1000  # Convert m/s to km/s
+            text_objects("Orbital Speed: " + "{:.2f}".format(orbital_speed_kms) + " km/s", 24, 8, 4.2)
+        else:
+            text_objects("Orbit Radius: N/A", 24, 8, 3.7)
+            text_objects("Orbital Speed: N/A", 24, 8, 4.2)
+
+        text_objects("Adjust mass of selected planet", 24, 7.5, 1.1)
+        text_objects("Click on a planet to select it", 18, 8, 2)
 
         pygame.display.flip()
-        print(slider.get_val())
 
     pygame.quit()
     sys.exit()
 
 
 if __name__ == "__main__":
+    m1 = 1.989e30  # Sun mass (kg)
+    time_scale = 2000000  # Speed up time by this factor
     main()
