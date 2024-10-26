@@ -9,25 +9,24 @@ time_scale = 2000000  # Speed up time by this factor
 
 pygame.init()
 
-WIDTH, HEIGHT = 1500, 900
+WIDTH, HEIGHT = 1600, 900
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Orbit Simulator")
 
 
-def text_objects(text, font_size, a, b):
+def text_objects(text, font, a, b):
     white = (255, 255, 255)
-    font = pygame.font.Font('freesansbold.ttf', int(font_size))
-    text_surface = font.render(text, True, white)
-    text_rect = text_surface.get_rect()
-    text_rect.center = (WIDTH // a, HEIGHT // b)
-    SCREEN.blit(text_surface, text_rect)
+    font = pygame.font.Font('freesansbold.ttf', font)
+    text = font.render(text, True, white)
+    textRect = text.get_rect()
+    textRect.center = (WIDTH // a, HEIGHT // b)
+    SCREEN.blit(text, textRect)
 
 
 def load_image(name, size):
     image = pygame.image.load(f'images/{name}').convert_alpha()
     image = pygame.transform.scale(image, (int(size), int(size)))
     return image
-
 
 class Slider:
     def __init__(self, pos:tuple, size,tuple, initial_val: float, min: int, max: int) -> None:
@@ -56,7 +55,6 @@ class Slider:
         button_val = self.button_rect.centerx - self.slider_left_pos
         return round((button_val/value_range) * (self.max - self.min)+self.min, 2)
 
-
 class Planet:
     def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size):
         self.name = name
@@ -68,7 +66,6 @@ class Planet:
         self.angle = 0
         self.x = 0
         self.y = 0
-        self.visible = True  # Planet is visible by default
 
         if self.name != "Sun":
             axis = self.orbit_radius_m
@@ -84,15 +81,8 @@ class Planet:
         self.y = center_y + self.orbit_radius * math.sin(self.angle)
 
     def draw(self, surface):
-        if self.visible:
-            rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-            surface.blit(self.image, rect)
-
-    def is_clicked(self, mouse_pos):
-        if not self.visible:
-            return False
         rect = self.image.get_rect(center=(int(self.x), int(self.y)))
-        return rect.collidepoint(mouse_pos)
+        surface.blit(self.image, rect)
 
 
 def create_planets():
@@ -133,7 +123,7 @@ def create_planets():
     for data in planet_data:
         name, image_file, mass, orbit_radius_m, orbit_radius_pixels = data
         planet_radius = planetary_radii[name]
-        size = sun_size * ((planet_radius / sun_radius) ** (1 / 6))  # Adjust root for visibility
+        size = sun_size * ((planet_radius / sun_radius) ** (1 / 6))  # 6th root for visibility
         planet = Planet(name, image_file, mass, orbit_radius_m, orbit_radius_pixels, size)
         planets.append(planet)
 
@@ -150,9 +140,6 @@ def main():
 
     center_x, center_y = WIDTH // 2, HEIGHT // 2
 
-    reset_button_rect = pygame.Rect(WIDTH - 150, 20, 130, 40)
-    reset_button_color = (100, 100, 100)
-
     while running:
         clock.tick(60)  # 60 FPS
         SCREEN.fill(BLACK)
@@ -160,43 +147,24 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
-                if reset_button_rect.collidepoint(mouse_pos):
-                    for planet in planets:
-                        planet.visible = True
-                else:
-                    for planet in planets:
-                        if planet.is_clicked(mouse_pos):
-                            planet.visible = not planet.visible
-                            break
 
         for planet in planets:
             if planet.name != "Sun":
                 planet.update_position(center_x, center_y)
-                if planet.visible:
-                    pygame.draw.circle(SCREEN, (100, 100, 100), (center_x, center_y), int(planet.orbit_radius), 1)
+                pygame.draw.circle(SCREEN, (100, 100, 100), (center_x, center_y), int(planet.orbit_radius), 1)
             else:
                 planet.x, planet.y = center_x, center_y
             planet.draw(SCREEN)
 
         for slider in self.sliders:
             if slider.container_rect.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-                slider.move_slider(pygame.mouse.get_pos())
+               slider.move_slider(pygame.mouse.get_pos())
             slider.draw(SCREEN)
-
-        pygame.draw.rect(SCREEN, reset_button_color, reset_button_rect)
-        reset_text = pygame.font.Font('freesansbold.ttf', 20).render("Reset Planets", True, (255, 255, 255))
-        reset_text_rect = reset_text.get_rect(center=reset_button_rect.center)
-        SCREEN.blit(reset_text, reset_text_rect)
 
         text_objects("Planet: " + planets[0].name, 24, 8, 7)
         text_objects("Mass: " + str(planets[0].mass) + " kg", 24, 8, 5)
         text_objects("Radius: " + str(planets[0].orbit_radius_m) + "km", 24, 8, 4)
         text_objects("Adjust mass by dragging slider", 24, 8, 1.1)
-        text_objects("Orbit Simulator", 30, 8, 11)
-        text_objects("Click on a planet to hide it", 15, 8, 2)
-
         pygame.display.flip()
         print(slider.get_val())
 
