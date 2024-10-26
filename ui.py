@@ -9,17 +9,17 @@ time_scale = 2000000  # Speed up time by this factor
 
 pygame.init()
 
-WIDTH, HEIGHT = 1300, 900
+WIDTH, HEIGHT = 1600, 900
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Orbit Simulator")
 
 
-def text_objects(text, font):
+def text_objects(text, font, a, b):
     white = (255, 255, 255)
     font = pygame.font.Font('freesansbold.ttf', font)
     text = font.render(text, True, white)
     textRect = text.get_rect()
-    textRect.center = (WIDTH // 8, HEIGHT // 4)
+    textRect.center = (WIDTH // a, HEIGHT // b)
     SCREEN.blit(text, textRect)
 
 
@@ -30,12 +30,12 @@ def load_image(name, size):
 
 class Slider:
     def __init__(self, pos:tuple, size,tuple, initial_val: float, min: int) -> None:
-        self.pos = pos
+        self.pos = (20, pos[1]) #pos
         self.size = size
 
-        self.slider_left_pos = self.pos[0] - size[0]//2
-        self.slider_right_pos = self.pos[0] + size[0]//2
-        self.slider_top_pos = self.pos[1] - size[1]//2
+        self.slider_left_pos = self.pos[0]
+        self.slider_right_pos = self.pos[0] + self.size[0]
+        self.slider_top_pos = self.pos[1] - self.size[1]
 
         self.min = min
         self.max = max
@@ -156,7 +156,10 @@ def main():
                slider.move_slider(pygame.mouse.get_pos())
             slider.draw(SCREEN)
 
-        text_objects("Orbit Simulator", 16)
+        text_objects("Planet: " + planets[0].name, 24, 8, 7)
+        text_objects("Mass: " + str(planets[0].mass) + " kg", 24, 8, 5)
+        text_objects("Radius: " + str(planets[0].orbit_radius_m) + "km", 24, 8, 4)
+        text_objects("Adjust mass by dragging slider", 24, 8, 1.1)
         pygame.display.flip()
 
     pygame.quit()
