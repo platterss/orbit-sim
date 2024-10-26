@@ -29,7 +29,7 @@ def load_image(name, size):
     return image
 
 class Slider:
-    def __init__(self, pos:tuple, size,tuple, initial_val: float, min: int) -> None:
+    def __init__(self, pos:tuple, size,tuple, initial_val: float, min: int, max: int) -> None:
         self.pos = (20, pos[1]) #pos
         self.size = size
 
@@ -49,6 +49,11 @@ class Slider:
 
     def move_slider(self, mouse_pos):
         self.button_rect.centerx = mouse_pos[0]
+
+    def get_val(self):
+        value_range = self.slider_right_pos - self.slider_left_pos
+        button_val = self.button_rect.centerx - self.slider_left_pos
+        return (button_val/value_range) * (self.max - self.min)+self.min
 
 class Planet:
     def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size):
@@ -124,7 +129,7 @@ def create_planets():
 
     return planets
 
-self.sliders = [Slider((WIDTH // 2, HEIGHT - 50), (WIDTH // 4, 10), (0, 1), 0.5, 0)]
+self.sliders = [Slider((WIDTH // 2, HEIGHT - 50), (WIDTH // 4, 10), (0, 1), 0.5, 0, 1)] #adjust last 2 vals for min and max
 
 def main():
     clock = pygame.time.Clock()
@@ -161,6 +166,7 @@ def main():
         text_objects("Radius: " + str(planets[0].orbit_radius_m) + "km", 24, 8, 4)
         text_objects("Adjust mass by dragging slider", 24, 8, 1.1)
         pygame.display.flip()
+        print(slider.get_val())
 
     pygame.quit()
     sys.exit()
