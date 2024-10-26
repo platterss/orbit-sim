@@ -382,18 +382,13 @@ def main():
             text_objects("Acceleration: " + "{:.2f}".format(acceleration) + " km/s^2", 24, 8, 3)
             total_energy = orbitSim.energy(m1, selected_planet.mass, selected_planet.orbit_radius_m)
             text_objects("Total Energy: " + "{:.2e}".format(total_energy) + " J", 24, 8, 2.7)
-            kinetic_energy = orbitSim.kinetic(m1, selected_planet.mass, selected_planet.orbit_radius_m)
-            text_objects("Kinetic Energy: " + "{:.2e}".format(kinetic_energy) + " J", 24, 8, 2.5)
-            potential_energy = orbitSim.potential(m1, selected_planet.mass, selected_planet.orbit_radius_m)
-            text_objects("Potential Energy: " + "{:.2e}".format(potential_energy) + " J", 24, 8, 2.3)
+
         else:
             text_objects("Orbit Radius: N/A", 24, 8, 3.7)
             text_objects("Orbital Speed: N/A", 24, 8, 4.2)
             text_objects("Gravitational Force: N/A", 24, 8, 3.3)
             text_objects("Acceleration: N/A", 24, 8, 3)
             text_objects("Total Energy: N/A", 24, 8, 2.7)
-            text_objects("Kinetic Energy: N/A", 24, 8, 2.5)
-            text_objects("Potential Energy: N/A", 24, 8, 2.3)
 
 
         text_objects("Adjust mass of selected planet", 24, 7.5, 1.1)
