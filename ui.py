@@ -12,7 +12,7 @@ WIDTH, HEIGHT = 1300, 900
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Orbit Simulator")
 
-#Display text
+
 def text_objects(text, font):
     white = (255, 255, 255)
     font = pygame.font.Font('freesansbold.ttf', font)
@@ -21,10 +21,10 @@ def text_objects(text, font):
     textRect.center = (WIDTH // 8, HEIGHT // 4)
     SCREEN.blit(text, textRect)
 
-def load_image(name, scale):
+
+def load_image(name, size):
     image = pygame.image.load(f'images/{name}').convert_alpha()
-    w, h = image.get_size()
-    image = pygame.transform.scale(image, (int(w * scale), int(h * scale)))
+    image = pygame.transform.scale(image, (int(size), int(size)))
     return image
 
 
@@ -32,7 +32,7 @@ class Planet:
     def __init__(self, name, image, mass, orbit_radius_m, orbit_radius_pixels, size):
         self.name = name
         self.image = load_image(image, size)
-        self.mass = mass # kg
+        self.mass = mass  # kg
         self.orbit_radius_m = orbit_radius_m
         self.orbit_radius = orbit_radius_pixels
         self.size = size
@@ -57,31 +57,51 @@ class Planet:
         rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         surface.blit(self.image, rect)
 
+
 def create_planets():
     planets = []
     center_x, center_y = WIDTH // 2, HEIGHT // 2
 
-    sun = Planet("Sun", "sun.jpg", m1, 0, 0, 0.1)
+    sun_size = 75  # pixels
+    sun = Planet("Sun", "sun.jpg", m1, 0, 0, sun_size)
     sun.x, sun.y = center_x, center_y
     planets.append(sun)
 
-    # Parameters: name, image file, mass (kg), orbit radius (m), orbit radius (pixels), size scale
+    planetary_radii = {  # km
+        "Sun": 696340,
+        "Mercury": 2440,
+        "Venus": 6052,
+        "Earth": 6371,
+        "Mars": 3390,
+        "Jupiter": 69911,
+        "Saturn": 58232,
+        "Uranus": 25362,
+        "Neptune": 24622
+    }
+
+    sun_radius = planetary_radii["Sun"]
+
+    # Parameters: name, image file, mass (kg), orbit radius (m), orbit radius (pixels)
     planet_data = [
-        ("Mercury", "mercury.jpg", 3.285e23, 5.791e10, 60, 0.05),
-        ("Venus", "venus.jpg", 4.867e24, 1.082e11, 100, 0.07),
-        ("Earth", "earth.jpg", 5.972e24, 1.496e11, 140, 0.07),
-        ("Mars", "mars.jpg", 6.39e23, 2.279e11, 180, 0.06),
-        ("Jupiter", "jupiter.jpg", 1.898e27, 7.785e11, 240, 0.15),
-        ("Saturn", "saturn.jpg", 5.683e26, 1.433e12, 300, 0.13),
-        ("Uranus", "uranus.jpg", 8.681e25, 2.872e12, 360, 0.1),
-        ("Neptune", "neptune.jpg", 1.024e26, 4.495e12, 420, 0.1)
+        ("Mercury", "mercury.jpg", 3.285e23, 5.791e10, 60),
+        ("Venus", "venus.jpg", 4.867e24, 1.082e11, 100),
+        ("Earth", "earth.jpg", 5.972e24, 1.496e11, 140),
+        ("Mars", "mars.jpg", 6.39e23, 2.279e11, 180),
+        ("Jupiter", "jupiter.jpg", 1.898e27, 7.785e11, 240),
+        ("Saturn", "saturn.jpg", 5.683e26, 1.433e12, 300),
+        ("Uranus", "uranus.jpg", 8.681e25, 2.872e12, 360),
+        ("Neptune", "neptune.jpg", 1.024e26, 4.495e12, 420)
     ]
 
     for data in planet_data:
-        planet = Planet(*data)
+        name, image_file, mass, orbit_radius_m, orbit_radius_pixels = data
+        planet_radius = planetary_radii[name]
+        size = sun_size * ((planet_radius / sun_radius) ** (1 / 6))  # 6th root for visibility
+        planet = Planet(name, image_file, mass, orbit_radius_m, orbit_radius_pixels, size)
         planets.append(planet)
 
     return planets
+
 
 def main():
     clock = pygame.time.Clock()
@@ -113,6 +133,7 @@ def main():
 
     pygame.quit()
     sys.exit()
+
 
 if __name__ == "__main__":
     main()
