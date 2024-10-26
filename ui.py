@@ -201,12 +201,6 @@ def update_mass_slider(selected_planet, slider, original_masses):
     slider.set_val(slider_value)
 
 
-# def update_velocity(selected_planet, sliders, original_masses):
-#     new_mass = update_selected_planet_mass(selected_planet, sliders[0], original_masses)
-#     v = orbitSim.orbVel(m1, new_mass, selected_planet.orbit_radius_m, selected_planet.orbitSim.ellipse(selected_planet.orbit_radius_m, Place radius 2))
-#     return v
-
-
 def update_selected_planet_mass(selected_planet, slider, original_masses):
     slider_value = slider.get_val()
     original_mass = original_masses[selected_planet.name]
